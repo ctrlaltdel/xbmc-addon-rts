@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+# vim: set fileencoding=utf-8 ts=2 expantab :
+
+import urllib
+import urllib2
+import re
+import json
+import os
+from xml.dom import minidom
+
+class RTS:
+  BASE_URL = 'http://www.rts.ch/video'
+
+  def get_categories(self, path):
+    PATTERN = '<a href="([^"]+)" class="video-tab-link">\s+([^<]+)</a>'
+
+    try:
+      url = self.BASE_URL + path + '/?f=video/tab'
+      html = urllib.urlopen(url).read()
+    except:
+      raise Exception('HTTP Request failure: url=%s' % url)
+
+    items = re.findall(PATTERN, html)
+
+    # Remove '/video' prefix in URL
+    return map(lambda x: (x[0][6:], x[1]), items)
+
+  def get_videos(self, path):
+    PATTERN = '<a.*?title="(.+?)".*?data-video-id="(.+?)".*?<img src="(.+?)"'
+
+    try:
+      url = self.BASE_URL + path + '/?f=video/tab'
+      html = urllib.urlopen(url).read()
+    except:
+      raise Exception('HTTP Request failure: url=%s' % url)
+
+    items = []
+
+    try:
+      for title, id, thumbnail in re.findall(PATTERN, html, re.DOTALL):
+        items.append((title, id, self.BASE_URL + thumbnail))
+      assert len(items) > 0
+    except:
+      raise Exception("Regex failure: html=%s" % html)
+
+    return items
+   
+  def fetchMedias(self, id):
+    # Copied from https://gist.github.com/0xced/943949
+    jsonURL = "http://www.rts.ch/?format=json/video&id=%s" % id
+    jsonData = urllib2.urlopen(jsonURL).read()
+    result = json.loads(jsonData)
+    try:
+      media = result["video"]["JSONinfo"]["media"]
+      media = map(lambda m: m["url"].split("?")[0], media)
+      baseURL = result["video"]["JSONinfo"].get("download") # was previously "http://media.tsr.ch/xobix_media/"
+    except:
+      raise Exception("Media not found")
+
+    return (media, baseURL)
+
+  def fetchCommand(self, media, baseURL):
+    # Copied from https://gist.github.com/0xced/943949
+    akastreamingPrefix = "http://akastreaming.tsr.ch/ch/"
+    if media.startswith(akastreamingPrefix):
+      mediaPath = media[len(akastreamingPrefix):]
+      fileName = os.path.splitext(os.path.split(mediaPath)[1])[0] + ".flv"
+      tokenURL = "http://www.rts.ch/token/ch-vod.xml?stream=media"
+      try:
+        dom = minidom.parse(urllib2.urlopen(tokenURL))
+        #cprint(dom.toxml(), 'cyan')
+      except:
+        raise Exception("Could not get token")
+
+      hostname = dom.getElementsByTagName("hostname")[0].firstChild.data
+      appName = dom.getElementsByTagName("appName")[0].firstChild.data
+      authParams = dom.getElementsByTagName("authParams")[0].firstChild.data
+
+      path = 'rtmp://%s:1935 app=%s?ovpfv=2.1.7&%s playpath=mp4:media/%s swfUrl=http://www.rts.ch/swf/player.swf pageUrl=http://www.rts.ch/video/' % (hostname, appName, authParams, mediaPath)
+      return path
+    else:
+      return baseURL + media
+
+  def get_media(self, id):
+    medias, baseURL = self.fetchMedias(id) 
+    # FIXME too simple?
+    media = medias[-1]
+    return self.fetchCommand(media, baseURL)
+ 
+# Testing
+if __name__ == '__main__':
+  rts = RTS()
+  print rts.get_media(4782273)
