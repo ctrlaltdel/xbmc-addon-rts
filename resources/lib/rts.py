@@ -45,22 +45,17 @@ class RTS:
 
     return items
    
-  def fetchMedias(self, id):
+  def get_media(self, id):
     # Copied from https://gist.github.com/0xced/943949
     jsonURL = "http://www.rts.ch/?format=json/video&id=%s" % id
     jsonData = urllib2.urlopen(jsonURL).read()
     result = json.loads(jsonData)
     try:
-      media = result["video"]["JSONinfo"]["media"]
-      media = map(lambda m: m["url"].split("?")[0], media)
+      media = sorted(result["video"]["JSONinfo"]["media"], key=lambda x: x['rate'])[-1]['url']
       baseURL = result["video"]["JSONinfo"].get("download") # was previously "http://media.tsr.ch/xobix_media/"
     except:
       raise Exception("Media not found")
 
-    return (media, baseURL)
-
-  def fetchCommand(self, media, baseURL):
-    # Copied from https://gist.github.com/0xced/943949
     akastreamingPrefix = "http://akastreaming.tsr.ch/ch/"
     if media.startswith(akastreamingPrefix):
       mediaPath = media[len(akastreamingPrefix):]
@@ -81,12 +76,6 @@ class RTS:
     else:
       return baseURL + media
 
-  def get_media(self, id):
-    medias, baseURL = self.fetchMedias(id) 
-    # FIXME too simple?
-    media = medias[-1]
-    return self.fetchCommand(media, baseURL)
- 
 # Testing
 if __name__ == '__main__':
   rts = RTS()
