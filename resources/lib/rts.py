@@ -38,6 +38,7 @@ class RTS:
 
     try:
       for title, id, thumbnail in re.findall(PATTERN, html, re.DOTALL):
+        thumbnail = thumbnail.split('?')[0]
         items.append((title, id, self.BASE_URL + thumbnail))
       assert len(items) > 0
     except:
