@@ -6,10 +6,14 @@ import urllib2
 import re
 import json
 import os
+import HTMLParser
 from xml.dom import minidom
 
 class RTS:
   BASE_URL = 'http://www.rts.ch/video'
+
+  def __init__(self):
+    self.htmlparser = HTMLParser.HTMLParser()
 
   def get_categories(self, path):
     PATTERN = '<a href="([^"]+)" class="video-tab-link">\s+([^<]+)</a>'
@@ -38,6 +42,8 @@ class RTS:
 
     try:
       for title, id, thumbnail in re.findall(PATTERN, html, re.DOTALL):
+        title = self.htmlparser.unescape(title.decode('utf8'))
+        thumbnail = thumbnail.split('?')[0]
         items.append((title, id, self.BASE_URL + thumbnail))
       assert len(items) > 0
     except:
