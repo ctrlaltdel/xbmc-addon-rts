@@ -80,7 +80,7 @@ class RTS:
       path = 'rtmp://%s:1935 app=%s?ovpfv=2.1.7&%s playpath=mp4:media/%s swfUrl=http://www.rts.ch/swf/player.swf pageUrl=http://www.rts.ch/video/' % (hostname, appName, authParams, mediaPath)
       return path
     else:
-      return baseURL + media
+      return result["video"]["JSONinfo"]["streams"].get("tv")
 
 # Testing
 if __name__ == '__main__':
