@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# vim: set fileencoding=utf-8 ts=2 expantab :
+# vim: set fileencoding=utf-8 ts=2 expandtab :
 
 import urllib
 import urllib2

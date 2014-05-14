@@ -1,4 +1,4 @@
-# vim: set fileencoding=utf-8 ts=2 expantab :
+# vim: set fileencoding=utf-8 ts=2 expandtab :
 from xbmcswift2 import Plugin
 import urllib
 import re
